@@ -294,6 +294,8 @@ function update() {
     drawFrame();
 }
 
+
+//source https://github.com/abramhindle/WebSocketsExamples/blob/master/static/broadcast.html
 function wsSetup() {
     var url = "ws://"+host+"/subscribe";   
     socket = new WebSocket(url);
@@ -306,13 +308,14 @@ function wsSetup() {
     };
     socket.onmessage = function(msg) {  
         try {
-            debug("WebSocket Recv:" + msg.data);
+           
             //XXX: TODO What are you going to do here?
-            //source https://github.com/abramhindle/WebSocketsExamples/blob/master/static/broadcast.html
-           var message = JSON.parse(msg.data)
-            for (key in message){
+           //debug("WebSocket Recv:" + msg.data);
+           // debug message keep appending so I comment it out
+           var message = JSON.parse(msg.data);
+           for (key in message){
                 world[key] = message[key];
-            }
+           }
             drawNextFrame();
         } catch (e) {
             alert("socket on message: " + e);

@@ -127,7 +127,6 @@ def subscribe_socket(ws):
     try:
         while True:
             msg = client.get()
-            print msg
             ws.send(msg)
 
     except Exception as error:
