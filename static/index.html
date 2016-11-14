@@ -6,7 +6,7 @@
     <meta content='width=device-width; height=device-height; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;' name='viewport' />
     <meta name="viewport" content="width=device-width" />
     <meta name="license" content="
-        Copyright 2013 Google, Abram Hindle
+        Copyright 2013 Google, Abram Hindle, Chris Lin
         
         Licensed under the Apache License, Version 2.0 (the "License");
         you may not use this file except in compliance with the License.
@@ -59,6 +59,44 @@ function drawCircle(context,entity) {
     }
 }
 
+// drawStar by markE and Andrei Volgin from  source: http://stackoverflow.com/questions/25837158/how-to-draw-a-star-by-using-canvas-html5
+function drawStar(context,entity,spikes,outerRadius,innerRadius){
+	//spikes indicates number of spikes for a star
+	//outerRadius indicates size of the outer spikes
+	//innerRadius indicates size of the inner spikes
+	with(context){
+	lineWidth = 3;
+	var rot = Math.PI/2*3;
+	var x = entity["x"];
+	var y = entity["y"];
+	var step = Math.PI/spikes;
+	beginPath();
+	moveTo(entity["x"], entity["y"] - outerRadius) //starting point
+	//drawing the spikes
+	for (i = 0; i < spikes; i++) {
+	    //drawing outer spikes
+	    x = entity["x"] + Math.cos(rot) * outerRadius;
+        y = entity["y"] + Math.sin(rot) * outerRadius;
+        lineTo(x, y)
+        rot += step
+		//drawing inner spikes
+		x = entity["x"] + Math.cos(rot) * innerRadius;
+        y = entity["y"]+ Math.sin(rot) * innerRadius;
+        lineTo(x, y)
+        rot += step
+	}
+	lineTo(entity["x"],entity["y"] - outerRadius);//moving destination
+	closePath();
+	fillStyle = entity["colour"];
+	strokeStyle = fillStyle;
+    stroke();
+	}
+	
+}
+
+
+
+
 function prepEntity(entity) {
     if (!entity["colour"]) {
         entity["colour"] = "#FF0000";
@@ -78,14 +116,21 @@ function clearFrame() {
 
 }
 
+//from assignment 4
 // This actually draws the frame
 function renderFrame() {
     clearFrame();
     for (var key in world) {
         var entity = world[key];
+		//draw circle only for purple color
+	if(entity["colour"] ==='purple'){
         drawCircle(context,prepEntity(entity));
+		}else{
+		drawStar(context,prepEntity(entity),6,30,15);
+		}
     }
 }
+
 
 var drawNext = true;
 // Signals that there's something to be drawn
@@ -125,6 +170,7 @@ function addEntity(entity, data) {
     world[entity] = data;
     drawNextFrame(); // (but should we?)
     //XXX: Send a XHTML Request that updates the entity you just modified!
+    socket.send(JSON.stringify(world));
 }
 var counter = 0;
 function addEntityWithoutName(data) {
@@ -239,8 +285,8 @@ mouse.mouseuppers.push(function(x,y,clicked,e) {
 });
 
 mouse.mousedraggers.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'green',
-                          'radius':10});
+    addEntityWithoutName({'x':x,'y':y,'colour':'purple',
+                          'radius':15});
 });
 
 
@@ -248,12 +294,12 @@ function update() {
     drawFrame();
 }
 
-
 function wsSetup() {
     var url = "ws://"+host+"/subscribe";   
     socket = new WebSocket(url);
     socket.onopen = function() {
         //XXX: TODO What are you going to do here?
+       // do nothing
     };
     socket.onerror = function(msg) {
         debug("WebSocket Error:" + msg.data);
@@ -261,7 +307,13 @@ function wsSetup() {
     socket.onmessage = function(msg) {  
         try {
             debug("WebSocket Recv:" + msg.data);
-            //XXX: TODO What are you going to do here?            
+            //XXX: TODO What are you going to do here?
+            //source https://github.com/abramhindle/WebSocketsExamples/blob/master/static/broadcast.html
+           var message = JSON.parse(msg.data)
+            for (key in message){
+                world[key] = message[key];
+            }
+            drawNextFrame();
         } catch (e) {
             alert("socket on message: " + e);
         }
